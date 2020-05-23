@@ -1,0 +1,46 @@
+scalar DateTime
+
+enum PhotoCategory {
+  SELFIE
+  PORTRAIT
+  ACTION
+  LANDSCAPE
+  GRAPHIC
+}
+
+type User {
+  githubLogin: ID!
+  name: String
+  avatar: String
+  postedPhotos: [Photo!]!
+  inPhotos: [Photo!]!
+}
+
+# Photo 타입 정의를 추가합니다.
+type Photo {
+  id: ID!
+  url: String!
+  name: String!
+  description: String
+  category: PhotoCategory!
+  postedBy: User!
+  taggedUsers: [User!]!
+  created: DateTime!
+}
+
+input PostPhotoInput {
+  name: String!
+  category: PhotoCategory = PORTRAIT
+  description: String
+}
+
+# allPhoto에서 Photo 타입을 반환합니다.
+type Query {
+  totalPhotos: Int!
+  allPhotos(after: DateTime): [Photo!]!
+}
+
+# 뮤테이션에서 새로 게시된 사진을 반환합니다.
+type Mutation {
+  postPhoto(input: PostPhotoInput!): Photo!
+}
