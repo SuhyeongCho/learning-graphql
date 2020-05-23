@@ -1,6 +1,24 @@
 /** 'apollo-server'를 불러옵니다. */
 const { ApolloServer } = require('apollo-server');
 
+type PhotoType = {
+  id: string;
+  name: string;
+  description?: string;
+  category: string;
+  githubUser: string;
+};
+
+type UserType = {
+  githubLogin: string;
+  name: string;
+};
+
+type TagType = {
+  photoID: string;
+  userID: string;
+};
+
 const typeDefs = `
 
   enum PhotoCategory {
@@ -16,6 +34,7 @@ const typeDefs = `
     name: String
     avatar: String
     postedPhotos: [Photo!]!
+    inPhotos: [Photo!]!
   }
 
   # Photo 타입 정의를 추가합니다.
@@ -26,6 +45,7 @@ const typeDefs = `
     description: String
     category: PhotoCategory!
     postedBy: User!
+    taggedUsers: [User!]!
   }
 
   input PostPhotoInput {
@@ -49,14 +69,14 @@ const typeDefs = `
 /** 고유 ID를 만들기 위해 값을 하나씩 증가시킬 변수입니다. */
 let _id = 0;
 
-const users = [
+const users: UserType[] = [
   { githubLogin: 'mHattrup', name: 'Mike Hattrup' },
   { githubLogin: 'gPlake', name: 'Glen Plake' },
   { githubLogin: 'sSchmidt', name: 'Scot Schmidt' }
 ];
 
 /** 메모리에 사진을 저장할 떄 사용할 데이터 타입 */
-const photos = [
+const photos: PhotoType[] = [
   {
     id: '1',
     name: 'Dropping the Heart Chute',
@@ -77,6 +97,13 @@ const photos = [
     category: 'LANDSCAPE',
     githubUser: 'sSchmidt'
   }
+];
+
+const tags: TagType[] = [
+  { photoID: '1', userID: 'gPlake' },
+  { photoID: '2', userID: 'sSchmidt' },
+  { photoID: '2', userID: 'mHattrup' },
+  { photoID: '2', userID: 'gPlake' }
 ];
 
 const resolvers = {
@@ -102,11 +129,27 @@ const resolvers = {
 
   Photo: {
     url: (parent) => `http://yoursite.com/img/${parent.id}.jpg`,
-    postedBy: (parent) => users.find((u) => u.githubLogin === parent.githubUser)
+    postedBy: (parent) => users.find((u) => u.githubLogin === parent.githubUser),
+    taggedUsers: (parent) =>
+      tags
+        /** 현재 사진에 대한 태그만 배열에 담아 반환합니다. */
+        .filter((tag) => tag.photoID === parent.id)
+        /** 태그 배열을 userID 배열로 변환합니다. */
+        .map((tag) => tag.userID)
+        /** userID 배열을 사용자 객체 배열로 변환합니다. */
+        .map((userID) => users.find((u) => u.githubLogin === userID))
   },
 
   User: {
-    postedPhotos: (parent) => photos.filter((p) => p.githubUser === parent.githubLogin)
+    postedPhotos: (parent) => photos.filter((p) => p.githubUser === parent.githubLogin),
+    inPhotos: (parent) =>
+      tags
+        /** 현재 사용자에 대한 태그만 배열에 담아 반환합니다. */
+        .filter((tag) => tag.userID === parent.id)
+        /** 태그 배열을 photoID 배열로 변환합니다. */
+        .map((tag) => tag.photoID)
+        /** photoID 배열을 사진객체 배열로 변환합니다. */
+        .map((photoID) => photos.find((p) => p.id === photoID))
   }
 };
 
