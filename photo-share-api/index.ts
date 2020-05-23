@@ -1,5 +1,9 @@
-/** 'apollo-server'를 불러옵니다. */
-const { ApolloServer } = require('apollo-server');
+const expressPlayground = require('graphql-playground-middleware-express')
+  .default;
+/** 'apollo-server-express'와 'express'를 require합니다. */
+const { ApolloServer } = require('apollo-server-express');
+const express = require('express');
+
 const { GraphQLScalarType } = require('graphql');
 
 type PhotoType = {
@@ -136,7 +140,8 @@ const resolvers = {
 
   Photo: {
     url: (parent) => `http://yoursite.com/img/${parent.id}.jpg`,
-    postedBy: (parent) => users.find((u) => u.githubLogin === parent.githubUser),
+    postedBy: (parent) =>
+      users.find((u) => u.githubLogin === parent.githubUser),
     taggedUsers: (parent) =>
       tags
         /** 현재 사진에 대한 태그만 배열에 담아 반환합니다. */
@@ -148,7 +153,8 @@ const resolvers = {
   },
 
   User: {
-    postedPhotos: (parent) => photos.filter((p) => p.githubUser === parent.githubLogin),
+    postedPhotos: (parent) =>
+      photos.filter((p) => p.githubUser === parent.githubLogin),
     inPhotos: (parent) =>
       tags
         /** 현재 사용자에 대한 태그만 배열에 담아 반환합니다. */
@@ -168,11 +174,25 @@ const resolvers = {
   })
 };
 
+/** 'express()' 를 호출하여 익스프레스 애플리케이션을 만듭니다. */
+const app = express();
+
 /**
  * 서버 인스턴스를 새로 만듭니다.
  * typeDefs(스키마)와 리졸버를 객체에 넣어 전달합니다.
  */
 const server = new ApolloServer({ typeDefs, resolvers });
 
-/** 웹 서버를 구동하기 위해 listen 메서드를 호출합니다. */
-server.listen().then(({ url }) => console.log(`GraphQL Service running on ${url}`));
+/** 'applyMiddleWare()'를 호출하여 미들웨어가 같은 경로에 마운트되도록 합니다. */
+server.applyMiddleware({ app });
+
+/** 홈 라우트를 만듭니다. */
+app.get('/', (req, res) => res.end('PhotoShare API 에 오신 것을 환영합니다.'));
+app.get('/playground', expressPlayground({ endpoint: '/graphql' }));
+
+/** 특정 포트에서 리스닝을 시작합니다. */
+app.listen({ port: 4000 }, () =>
+  console.log(
+    `GraphQL Server running @ http://localhost:4000${server.graphqlPath}`
+  )
+);
