@@ -2,11 +2,27 @@
 const { ApolloServer } = require('apollo-server');
 
 const typeDefs = `
+
+  enum PhotoCategory {
+    SELFIE
+    PORTRAIT
+    ACTION
+    LANDSCAPE
+    GRAPHIC
+  }
+
   # Photo 타입 정의를 추가합니다.
   type Photo {
     id: ID!
     url: String!
     name: String!
+    description: String
+    category: PhotoCategory!
+  }
+
+  input PostPhotoInput {
+    name: String!
+    category: PhotoCategory=PORTRAIT
     description: String
   }
 
@@ -18,7 +34,7 @@ const typeDefs = `
 
   # 뮤테이션에서 새로 게시된 사진을 반환합니다.
   type Mutation {
-    postPhoto(name: String!, description: String): Photo!
+    postPhoto(input: PostPhotoInput!): Photo!
   }
 `;
 
@@ -40,7 +56,7 @@ const resolvers = {
       /** 새로운 사진을 만들고 id를 부여합니다. */
       const newPhoto = {
         id: _id++,
-        ...args
+        ...args.input
       };
       photos.push(newPhoto);
 
