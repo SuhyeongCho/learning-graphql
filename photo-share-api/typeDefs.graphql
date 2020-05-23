@@ -38,6 +38,8 @@ input PostPhotoInput {
 type Query {
   totalPhotos: Int!
   allPhotos(after: DateTime): [Photo!]!
+  totalUsers: Int!
+  allUsers: [User!]!
 }
 
 # 뮤테이션에서 새로 게시된 사진을 반환합니다.
