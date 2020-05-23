@@ -1,30 +1,63 @@
+/** 'apollo-server'를 불러옵니다. */
 const { ApolloServer } = require('apollo-server');
 
 const typeDefs = `
-  type Query {
-    totalPhotos: Int!
+  # Photo 타입 정의를 추가합니다.
+  type Photo {
+    id: ID!
+    url: String!
+    name: String!
+    description: String
   }
 
+  # allPhoto에서 Photo 타입을 반환합니다.
+  type Query {
+    totalPhotos: Int!
+    allPhotos: [Photo!]!
+  }
+
+  # 뮤테이션에서 새로 게시된 사진을 반환합니다.
   type Mutation {
-    postPhoto(name: String!, description: String): Boolean!
+    postPhoto(name: String!, description: String): Photo!
   }
 `;
 
+/** 고유 ID를 만들기 위해 값을 하나씩 증가시킬 변수입니다. */
+let _id = 0;
+/** 메모리에 사진을 저장할 떄 사용할 데이터 타입 */
 const photos = [];
 
 const resolvers = {
   Query: {
-    totalPhotos: () => photos.length
+    /** 사진 배열의 길이를 반환합니다. */
+    totalPhotos: () => photos.length,
+    allPhotos: () => photos
   },
 
+  /** Mutation & postPhoto 리졸버 함수 */
   Mutation: {
     postPhoto(parent, args) {
-      photos.push(args);
-      return true;
+      /** 새로운 사진을 만들고 id를 부여합니다. */
+      const newPhoto = {
+        id: _id++,
+        ...args
+      };
+      photos.push(newPhoto);
+
+      return newPhoto;
     }
+  },
+
+  Photo: {
+    url: (parent) => `http://yoursite.com/img/${parent.id}.jpg`
   }
 };
 
+/**
+ * 서버 인스턴스를 새로 만듭니다.
+ * typeDefs(스키마)와 리졸버를 객체에 넣어 전달합니다.
+ */
 const server = new ApolloServer({ typeDefs, resolvers });
 
+/** 웹 서버를 구동하기 위해 listen 메서드를 호출합니다. */
 server.listen().then(({ url }) => console.log(`GraphQL Service running on ${url}`));
