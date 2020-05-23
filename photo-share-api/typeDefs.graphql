@@ -28,6 +28,11 @@ type Photo {
   created: DateTime!
 }
 
+type AuthPayload {
+  token: String!
+  user: User!
+}
+
 input PostPhotoInput {
   name: String!
   category: PhotoCategory = PORTRAIT
@@ -45,4 +50,5 @@ type Query {
 # 뮤테이션에서 새로 게시된 사진을 반환합니다.
 type Mutation {
   postPhoto(input: PostPhotoInput!): Photo!
+  githubAuth(code: String!): AuthPayload!
 }
