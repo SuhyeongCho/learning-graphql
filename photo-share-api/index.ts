@@ -22,13 +22,20 @@ async function start() {
 
   const db = client.db();
 
-  const context = { db };
-
   /**
    * 서버 인스턴스를 새로 만듭니다.
    * typeDefs(스키마)와 리졸버를 객체에 넣어 전달합니다.
    */
-  const server = new ApolloServer({ typeDefs, resolvers, context });
+  const server = new ApolloServer({
+    typeDefs,
+    resolvers,
+    context: async ({ req }) => {
+      const gitHubToken = req.headers.authorization;
+      const currentUser = await db.collection('users').findOne({ gitHubToken });
+
+      return { db, currentUser };
+    }
+  });
 
   /** 'applyMiddleWare()'를 호출하여 미들웨어가 같은 경로에 마운트되도록 합니다. */
   server.applyMiddleware({ app });

@@ -1,9 +1,24 @@
 const { client_id, client_secret } = require('../clientID.json');
 
-/** 고유 ID를 만들기 위해 값을 하나씩 증가시킬 변수입니다. */
-let _id = 0;
-
 global.fetch = require('node-fetch');
+
+const postPhoto = async (parent, args, { db, currentUser }) => {
+  /** 컨텍스트에 사용자가 존재하지 않는다면 에러를 던집니다. */
+  if (!currentUser) throw new Error('only an authorized user can post a photo');
+
+  /** 현재 사용자의 id와 사진을 저장합니다. */
+  const newPhoto = {
+    ...args.input,
+    userID: currentUser.githubLogin,
+    created: new Date()
+  };
+
+  /** 데이터베이스에 새로운 사진을 넣고, 반환되는 id 값을 받습니다. */
+  const { insertedIds } = await db.collection('photos').insert(newPhoto);
+  newPhoto.id = insertedIds[0];
+
+  return newPhoto;
+};
 
 const requestGithubToken = (credentials) =>
   fetch('https://github.com/login/oauth/access_token', {
@@ -68,15 +83,6 @@ const githubAuth = async (parent, { code }, { db }) => {
 };
 
 module.exports = {
-  postPhoto(parent, args) {
-    /** 새로운 사진을 만들고 id를 부여합니다. */
-    const newPhoto = {
-      id: _id++,
-      ...args.input,
-      created: new Date()
-    };
-    photos.push(newPhoto);
-    return newPhoto;
-  },
+  postPhoto,
   githubAuth
 };

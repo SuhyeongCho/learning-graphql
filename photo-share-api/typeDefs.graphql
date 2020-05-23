@@ -41,6 +41,7 @@ input PostPhotoInput {
 
 # allPhoto에서 Photo 타입을 반환합니다.
 type Query {
+  me: User
   totalPhotos: Int!
   allPhotos(after: DateTime): [Photo!]!
   totalUsers: Int!
