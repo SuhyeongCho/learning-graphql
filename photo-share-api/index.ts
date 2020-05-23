@@ -1,5 +1,6 @@
 /** 'apollo-server'를 불러옵니다. */
 const { ApolloServer } = require('apollo-server');
+const { GraphQLScalarType } = require('graphql');
 
 type PhotoType = {
   id: string;
@@ -7,6 +8,7 @@ type PhotoType = {
   description?: string;
   category: string;
   githubUser: string;
+  created: string;
 };
 
 type UserType = {
@@ -20,6 +22,7 @@ type TagType = {
 };
 
 const typeDefs = `
+  scalar DateTime
 
   enum PhotoCategory {
     SELFIE
@@ -46,6 +49,7 @@ const typeDefs = `
     category: PhotoCategory!
     postedBy: User!
     taggedUsers: [User!]!
+    created: DateTime!
   }
 
   input PostPhotoInput {
@@ -57,7 +61,7 @@ const typeDefs = `
   # allPhoto에서 Photo 타입을 반환합니다.
   type Query {
     totalPhotos: Int!
-    allPhotos: [Photo!]!
+    allPhotos(after: DateTime): [Photo!]!
   }
 
   # 뮤테이션에서 새로 게시된 사진을 반환합니다.
@@ -82,20 +86,23 @@ const photos: PhotoType[] = [
     name: 'Dropping the Heart Chute',
     description: 'The heart chute is one of my favorite chutes',
     category: 'ACTION',
-    githubUser: 'gPlake'
+    githubUser: 'gPlake',
+    created: '3-28-1997'
   },
   {
     id: '2',
     name: 'Enjoying the sunshine',
     category: 'SELFIE',
-    githubUser: 'sSchmidt'
+    githubUser: 'sSchmidt',
+    created: '1-2-1985'
   },
   {
     id: '3',
     name: 'Gunbarrel 25',
     description: '25 laps on gunbarrel today',
     category: 'LANDSCAPE',
-    githubUser: 'sSchmidt'
+    githubUser: 'sSchmidt',
+    created: '2018-04-15T19:09:58.308Z'
   }
 ];
 
@@ -110,7 +117,7 @@ const resolvers = {
   Query: {
     /** 사진 배열의 길이를 반환합니다. */
     totalPhotos: () => photos.length,
-    allPhotos: () => photos
+    allPhotos: (parent, args) => photos
   },
 
   /** Mutation & postPhoto 리졸버 함수 */
@@ -119,10 +126,10 @@ const resolvers = {
       /** 새로운 사진을 만들고 id를 부여합니다. */
       const newPhoto = {
         id: _id++,
-        ...args.input
+        ...args.input,
+        created: new Date()
       };
       photos.push(newPhoto);
-
       return newPhoto;
     }
   },
@@ -150,7 +157,15 @@ const resolvers = {
         .map((tag) => tag.photoID)
         /** photoID 배열을 사진객체 배열로 변환합니다. */
         .map((photoID) => photos.find((p) => p.id === photoID))
-  }
+  },
+
+  DateTime: new GraphQLScalarType({
+    name: 'DateTime',
+    description: 'A valid date time value',
+    parseValue: (value) => new Date(value),
+    serialize: (value) => new Date(value).toISOString(),
+    parseLiteral: (ast) => ast.value
+  })
 };
 
 /**
